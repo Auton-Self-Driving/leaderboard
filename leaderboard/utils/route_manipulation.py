@@ -13,9 +13,12 @@ It also contains functions to convert the CARLA world location do GPS coordinate
 import math
 import xml.etree.ElementTree as ET
 
-from agents.navigation.global_route_planner import GlobalRoutePlanner
-from agents.navigation.global_route_planner_dao import GlobalRoutePlannerDAO
-from agents.navigation.local_planner import RoadOption
+from environment.carla_9_4.agents.navigation.global_route_planner import GlobalRoutePlanner
+from environment.carla_9_4.agents.navigation.global_route_planner_dao import GlobalRoutePlannerDAO
+from environment.carla_9_4.agents.navigation.local_planner import RoadOption
+# from .global_route_planner import GlobalRoutePlanner
+# from leaderboard.utils.global_route_planner_dao import GlobalRoutePlannerDAO
+# from leaderboard.utils.global_route_planner import RoadOption
 
 
 def _location_to_gps(lat_ref, lon_ref, location):
@@ -145,6 +148,7 @@ def interpolate_trajectory(world, waypoints_trajectory, hop_resolution=1.0):
     grp.setup()
     # Obtain route plan
     route = []
+    wp = []
     for i in range(len(waypoints_trajectory) - 1):   # Goes until the one before the last.
 
         waypoint = waypoints_trajectory[i]
@@ -152,7 +156,8 @@ def interpolate_trajectory(world, waypoints_trajectory, hop_resolution=1.0):
         interpolated_trace = grp.trace_route(waypoint, waypoint_next)
         for wp_tuple in interpolated_trace:
             route.append((wp_tuple[0].transform, wp_tuple[1]))
+            wp.append((wp_tuple[0], wp_tuple[1]))
 
     lat_ref, lon_ref = _get_latlon_ref(world)
 
-    return location_route_to_gps(route, lat_ref, lon_ref), route
+    return location_route_to_gps(route, lat_ref, lon_ref), route, wp

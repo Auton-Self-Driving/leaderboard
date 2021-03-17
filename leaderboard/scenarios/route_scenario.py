@@ -19,7 +19,7 @@ import py_trees
 
 import carla
 
-from agents.navigation.local_planner import RoadOption
+from environment.carla_9_4.agents.navigation.local_planner import RoadOption
 
 # pylint: disable=line-too-long
 from srunner.scenarioconfigs.scenario_configuration import ScenarioConfiguration, ActorConfigurationData
@@ -167,6 +167,147 @@ def compare_scenarios(scenario_choice, existent_scenario):
                 return True
 
     return False
+
+
+def scenario_sampling(potential_scenarios_definitions, random_seed=0):
+    """
+    The function used to sample the scenarios that are going to happen for this route.
+    """
+
+    # fix the random seed for reproducibility
+    rgn = random.RandomState(random_seed)
+
+    def position_sampled(scenario_choice, sampled_scenarios):
+        """
+        Check if a position was already sampled, i.e. used for another scenario
+        """
+        for existent_scenario in sampled_scenarios:
+            # If the scenarios have equal positions then it is true.
+            if compare_scenarios(scenario_choice, existent_scenario):
+                return True
+
+        return False
+
+    def select_scenario(list_scenarios):
+        # priority to the scenarios with higher number: 10 has priority over 9, etc.
+        higher_id = -1
+        selected_scenario = None
+        for scenario in list_scenarios:
+            try:
+                scenario_number = int(scenario['name'].split('Scenario')[1])
+            except:
+                scenario_number = -1
+
+            if scenario_number >= higher_id:
+                higher_id = scenario_number
+                selected_scenario = scenario
+
+        return selected_scenario
+
+    # The idea is to randomly sample a scenario per trigger position.
+    sampled_scenarios = []
+    for trigger in potential_scenarios_definitions.keys():
+        possible_scenarios = potential_scenarios_definitions[trigger]
+
+        scenario_choice = select_scenario(possible_scenarios)
+        del possible_scenarios[possible_scenarios.index(scenario_choice)]
+        # We keep sampling and testing if this position is present on any of the scenarios.
+        while position_sampled(scenario_choice, sampled_scenarios):
+            if possible_scenarios is None or not possible_scenarios:
+                scenario_choice = None
+                break
+            scenario_choice = rgn.choice(possible_scenarios)
+            del possible_scenarios[possible_scenarios.index(scenario_choice)]
+
+        if scenario_choice is not None:
+            sampled_scenarios.append(scenario_choice)
+
+    return sampled_scenarios
+
+
+def build_scenario_instances(world, ego_vehicle, scenario_definitions,
+                                scenarios_per_tick=5, timeout=300, debug_mode=False):
+    """
+    Based on the parsed route and possible scenarios, build all the scenario classes.
+    """
+    scenario_instance_vec = []
+
+    if debug_mode:
+        for scenario in scenario_definitions:
+            loc = carla.Location(scenario['trigger_position']['x'],
+                                    scenario['trigger_position']['y'],
+                                    scenario['trigger_position']['z']) + carla.Location(z=2.0)
+            world.debug.draw_point(loc, size=0.3, color=carla.Color(255, 0, 0), life_time=100000)
+            world.debug.draw_string(loc, str(scenario['name']), draw_shadow=False,
+                                    color=carla.Color(0, 0, 255), life_time=100000, persistent_lines=True)
+
+    def _get_actors_instances(self, list_of_antagonist_actors):
+        """
+        Get the full list of actor instances.
+        """
+
+        def get_actors_from_list(list_of_actor_def):
+            """
+                Receives a list of actor definitions and creates an actual list of ActorConfigurationObjects
+            """
+            sublist_of_actors = []
+            for actor_def in list_of_actor_def:
+                sublist_of_actors.append(convert_json_to_actor(actor_def))
+
+            return sublist_of_actors
+
+        list_of_actors = []
+        # Parse vehicles to the left
+        if 'front' in list_of_antagonist_actors:
+            list_of_actors += get_actors_from_list(list_of_antagonist_actors['front'])
+
+        if 'left' in list_of_antagonist_actors:
+            list_of_actors += get_actors_from_list(list_of_antagonist_actors['left'])
+
+        if 'right' in list_of_antagonist_actors:
+            list_of_actors += get_actors_from_list(list_of_antagonist_actors['right'])
+
+        return list_of_actors
+
+    for scenario_number, definition in enumerate(scenario_definitions):
+        # Get the class possibilities for this scenario number
+        scenario_class = NUMBER_CLASS_TRANSLATION[definition['name']]
+
+        # Create the other actors that are going to appear
+        if definition['other_actors'] is not None:
+            list_of_actor_conf_instances = _get_actors_instances(definition['other_actors'])
+        else:
+            list_of_actor_conf_instances = []
+        # Create an actor configuration for the ego-vehicle trigger position
+
+        egoactor_trigger_position = convert_json_to_transform(definition['trigger_position'])
+        scenario_configuration = ScenarioConfiguration()
+        scenario_configuration.other_actors = list_of_actor_conf_instances
+        scenario_configuration.trigger_points = [egoactor_trigger_position]
+        scenario_configuration.subtype = definition['scenario_type']
+        # scenario_configuration.ego_vehicles = [ActorConfigurationData('vehicle.lincoln.mkz2017',
+        #                                                                 ego_vehicle.get_transform(),
+        #                                                                 'hero')]
+        scenario_configuration.ego_vehicles = [ego_vehicle]
+        route_var_name = "ScenarioRouteNumber{}".format(scenario_number)
+        scenario_configuration.route_var_name = route_var_name
+        try:
+            scenario_instance = scenario_class(world, [ego_vehicle], scenario_configuration,
+                                                criteria_enable=False, timeout=timeout)
+            # Do a tick every once in a while to avoid spawning everything at the same time
+            if scenario_number % scenarios_per_tick == 0:
+                # if CarlaDataProvider.is_sync_mode():
+                    world.tick()
+                # else:
+                #     world.wait_for_tick()
+
+        except Exception as e:
+            print("Skipping scenario '{}' due to setup error: {}".format(definition['name'], e))
+            continue
+
+        scenario_instance_vec.append(scenario_instance)
+
+    return scenario_instance_vec
 
 
 class RouteScenario(BasicScenario):
