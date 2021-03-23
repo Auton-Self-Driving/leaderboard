@@ -23,6 +23,7 @@ from environment.carla_9_4.agents.navigation.local_planner import RoadOption
 
 # pylint: disable=line-too-long
 from srunner.scenarioconfigs.scenario_configuration import ScenarioConfiguration, ActorConfigurationData
+from srunner.scenarioconfigs.route_scenario_configuration import RouteScenarioConfiguration
 # pylint: enable=line-too-long
 from srunner.scenariomanager.scenarioatomics.atomic_behaviors import Idle, ScenarioTriggerer
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
@@ -286,8 +287,8 @@ def build_scenario_instances(world, ego_vehicle, scenario_definitions,
         scenario_configuration.trigger_points = [egoactor_trigger_position]
         scenario_configuration.subtype = definition['scenario_type']
         # scenario_configuration.ego_vehicles = [ActorConfigurationData('vehicle.lincoln.mkz2017',
-        #                                                                 ego_vehicle.get_transform(),
-        #                                                                 'hero')]
+                                                                        # ego_vehicle.get_transform(),
+                                                                        # 'hero')]
         scenario_configuration.ego_vehicles = [ego_vehicle]
         route_var_name = "ScenarioRouteNumber{}".format(scenario_number)
         scenario_configuration.route_var_name = route_var_name
@@ -296,10 +297,10 @@ def build_scenario_instances(world, ego_vehicle, scenario_definitions,
                                                 criteria_enable=False, timeout=timeout)
             # Do a tick every once in a while to avoid spawning everything at the same time
             if scenario_number % scenarios_per_tick == 0:
-                # if CarlaDataProvider.is_sync_mode():
+                if CarlaDataProvider.is_sync_mode():
                     world.tick()
-                # else:
-                #     world.wait_for_tick()
+                else:
+                    world.wait_for_tick()
 
         except Exception as e:
             print("Skipping scenario '{}' due to setup error: {}".format(definition['name'], e))
@@ -656,6 +657,133 @@ class RouteScenario(BasicScenario):
             blackboard_list,
             scenario_trigger_distance,
             repeat_scenarios=False
+        )
+
+        subbehavior.add_child(scenario_triggerer)  # make ScenarioTriggerer the first thing to be checked
+        subbehavior.add_children(scenario_behaviors)
+        subbehavior.add_child(Idle())  # The behaviours cannot make the route scenario stop
+        behavior.add_child(subbehavior)
+        return behavior
+
+    def _create_test_criteria(self):
+        """
+        """
+        criteria = []
+        route = convert_transform_to_location(self.route)
+
+        collision_criterion = CollisionTest(self.ego_vehicles[0], terminate_on_failure=False)
+
+        route_criterion = InRouteTest(self.ego_vehicles[0],
+                                      route=route,
+                                      offroad_max=30,
+                                      terminate_on_failure=True)
+                                      
+        completion_criterion = RouteCompletionTest(self.ego_vehicles[0], route=route)
+
+        outsidelane_criterion = OutsideRouteLanesTest(self.ego_vehicles[0], route=route)
+
+        red_light_criterion = RunningRedLightTest(self.ego_vehicles[0])
+
+        stop_criterion = RunningStopTest(self.ego_vehicles[0])
+
+        blocked_criterion = ActorSpeedAboveThresholdTest(self.ego_vehicles[0],
+                                                         speed_threshold=0.1,
+                                                         below_threshold_max_time=180.0,
+                                                         terminate_on_failure=True,
+                                                         name="AgentBlockedTest")
+
+        criteria.append(completion_criterion)
+        criteria.append(outsidelane_criterion)
+        criteria.append(collision_criterion)
+        criteria.append(red_light_criterion)
+        criteria.append(stop_criterion)
+        criteria.append(route_criterion)
+        criteria.append(blocked_criterion)
+
+        return criteria
+
+    def __del__(self):
+        """
+        Remove all actors upon deletion
+        """
+        self.remove_all_actors()
+
+
+
+class Trigger(BasicScenario):
+
+    """
+    Implementation of a RouteScenario, i.e. a scenario that consists of driving along a pre-defined route,
+    along which several smaller scenarios are triggered
+    """
+    category = "Trigger"
+
+    def __init__(self, world, ego_vehicle, route, scenarios, debug_mode=0, criteria_enable=False):
+        """
+        Setup all relevant parameters and create scenarios along route
+        """
+        self.config = RouteScenarioConfiguration()
+        self.config.friction = 1.0
+        self.config.other_actors = None
+        self.config.trigger_points = route[0]
+        self.config.route_var_name = None
+        # self.config.route_var_name = '__ego__'
+        self.config.weather = carla.WeatherParameters(sun_altitude_angle=30, cloudiness=30)
+        self.ego_vehicle = ego_vehicle
+        self.ego_vehicles = [ego_vehicle]
+        self.route = route
+        self.timeout = False
+        self.debug_mode = debug_mode
+
+        self.list_scenarios = scenarios
+
+        super(Trigger, self).__init__(name='trigger',
+                                            ego_vehicles=[ego_vehicle],
+                                            config=self.config,
+                                            world=world,
+                                            debug_mode=debug_mode>1,
+                                            terminate_on_failure=False,
+                                            criteria_enable=criteria_enable)
+
+
+    def _create_behavior(self):
+        """
+        Basic behavior do nothing, i.e. Idle
+        """
+        scenario_trigger_distance = 1.5  # Max trigger distance between route and scenario
+
+        behavior = py_trees.composites.Parallel(policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
+
+        subbehavior = py_trees.composites.Parallel(name="Behavior",
+                                                   policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ALL)
+
+        scenario_behaviors = []
+        blackboard_list = []
+
+        for i, scenario in enumerate(self.list_scenarios):
+            if scenario.scenario.behavior is not None:
+                route_var_name = scenario.config.route_var_name
+
+                if route_var_name is not None:
+                    scenario_behaviors.append(scenario.scenario.behavior)
+                    blackboard_list.append([scenario.config.route_var_name,
+                                            scenario.config.trigger_points[0].location])
+                else:
+                    name = "{} - {}".format(i, scenario.scenario.behavior.name)
+                    oneshot_idiom = oneshot_behavior(
+                        name=name,
+                        variable_name=name,
+                        behaviour=scenario.scenario.behavior)
+                    scenario_behaviors.append(oneshot_idiom)
+
+        # Add behavior that manages the scenarios trigger conditions
+        scenario_triggerer = ScenarioTriggerer(
+            self.ego_vehicles[0],
+            self.route,
+            blackboard_list,
+            scenario_trigger_distance,
+            repeat_scenarios=False,
+            debug=True,
         )
 
         subbehavior.add_child(scenario_triggerer)  # make ScenarioTriggerer the first thing to be checked
