@@ -24,6 +24,7 @@ import pkg_resources
 import sys
 import carla
 import signal
+import random
 
 from srunner.scenariomanager.carla_data_provider import *
 from srunner.scenariomanager.timer import GameTime
@@ -36,7 +37,8 @@ from leaderboard.autoagents.agent_wrapper import  AgentWrapper, AgentError
 from leaderboard.utils.statistics_manager import StatisticsManager
 from leaderboard.utils.route_indexer import RouteIndexer
 
-from environment.carla_9_4.server import CarlaServerWithPort
+from environment.carla_9_4.server import CarlaServer
+from environment.carla_9_4.config import DEFAULT_ENV
 
 
 sensors_to_icons = {
@@ -76,14 +78,17 @@ class LeaderboardEvaluator(object):
         # First of all, we need to create the client that will send the requests
         # to the simulator. Here we'll assume the simulator is accepting
         # requests in the localhost at port 2000.
-        self.server = CarlaServerWithPort(int(args.port))
-        time.sleep(21)
-        self.client = carla.Client(args.host, int(args.port))
+        self.server = CarlaServer(DEFAULT_ENV)
+        time.sleep(5)
+        # self.client = carla.Client(args.host, int(args.port))
+        self.client = carla.Client(args.host, self.server.server_port)
         if args.timeout:
             self.client_timeout = float(args.timeout)
         self.client.set_timeout(self.client_timeout)
 
-        self.traffic_manager = self.client.get_trafficmanager(int(args.trafficManagerPort))
+        self.tm_port = random.randint(10000, 60000)
+        # self.traffic_manager = self.client.get_trafficmanager(int(args.trafficManagerPort))
+        self.traffic_manager = self.client.get_trafficmanager(self.tm_port)
 
         dist = pkg_resources.get_distribution("carla")
         if dist.version != 'leaderboard':
@@ -153,8 +158,8 @@ class LeaderboardEvaluator(object):
                 self.ego_vehicles[i] = None
         self.ego_vehicles = []
 
-        # if self._agent_watchdog:
-        #     self._agent_watchdog.stop()
+        if self._agent_watchdog:
+            self._agent_watchdog.stop()
 
         if hasattr(self, 'agent_instance') and self.agent_instance:
             self.agent_instance.destroy()
@@ -214,7 +219,8 @@ class LeaderboardEvaluator(object):
 
         CarlaDataProvider.set_client(self.client)
         CarlaDataProvider.set_world(self.world)
-        CarlaDataProvider.set_traffic_manager_port(int(args.trafficManagerPort))
+        # CarlaDataProvider.set_traffic_manager_port(int(args.trafficManagerPort))
+        CarlaDataProvider.set_traffic_manager_port(self.tm_port)
 
         self.traffic_manager.set_synchronous_mode(True)
         self.traffic_manager.set_random_device_seed(int(args.trafficManagerSeed))
@@ -263,7 +269,7 @@ class LeaderboardEvaluator(object):
 
         # Set up the user's agent, and the timer to avoid freezing the simulation
         try:
-            # self._agent_watchdog.start()
+            self._agent_watchdog.start()
             agent_class_name = getattr(self.module_agent, 'get_entry_point')()
             self.agent_instance = getattr(self.module_agent, agent_class_name)(args.agent_config)
             config.agent = self.agent_instance
@@ -278,7 +284,7 @@ class LeaderboardEvaluator(object):
                 self.sensor_icons = [sensors_to_icons[sensor['type']] for sensor in self.sensors]
                 self.statistics_manager.save_sensors(self.sensor_icons, args.checkpoint)
 
-            # self._agent_watchdog.stop()
+            self._agent_watchdog.stop()
 
         except SensorConfigurationInvalid as e:
             # The sensors are invalid -> set the ejecution to rejected and stop
