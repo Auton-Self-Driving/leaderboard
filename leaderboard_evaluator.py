@@ -12,6 +12,7 @@ Provisional code to evaluate Autonomous Agents for the CARLA Autonomous Driving 
 """
 from __future__ import print_function
 
+import time
 import traceback
 import argparse
 from argparse import RawTextHelpFormatter
@@ -34,6 +35,8 @@ from leaderboard.envs.sensor_interface import SensorConfigurationInvalid
 from leaderboard.autoagents.agent_wrapper import  AgentWrapper, AgentError
 from leaderboard.utils.statistics_manager import StatisticsManager
 from leaderboard.utils.route_indexer import RouteIndexer
+
+from environment.carla_9_4.server import CarlaServerWithPort
 
 
 sensors_to_icons = {
@@ -73,6 +76,8 @@ class LeaderboardEvaluator(object):
         # First of all, we need to create the client that will send the requests
         # to the simulator. Here we'll assume the simulator is accepting
         # requests in the localhost at port 2000.
+        self.server = CarlaServerWithPort(int(args.port))
+        time.sleep(21)
         self.client = carla.Client(args.host, int(args.port))
         if args.timeout:
             self.client_timeout = float(args.timeout)
@@ -120,6 +125,7 @@ class LeaderboardEvaluator(object):
             del self.manager
         if hasattr(self, 'world') and self.world:
             del self.world
+        self.server.close()
 
     def _cleanup(self):
         """
