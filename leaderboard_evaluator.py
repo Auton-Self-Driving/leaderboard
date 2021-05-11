@@ -147,8 +147,8 @@ class LeaderboardEvaluator(object):
                 self.ego_vehicles[i] = None
         self.ego_vehicles = []
 
-        if self._agent_watchdog:
-            self._agent_watchdog.stop()
+        # if self._agent_watchdog:
+        #     self._agent_watchdog.stop()
 
         if hasattr(self, 'agent_instance') and self.agent_instance:
             self.agent_instance.destroy()
@@ -257,7 +257,7 @@ class LeaderboardEvaluator(object):
 
         # Set up the user's agent, and the timer to avoid freezing the simulation
         try:
-            self._agent_watchdog.start()
+            # self._agent_watchdog.start()
             agent_class_name = getattr(self.module_agent, 'get_entry_point')()
             self.agent_instance = getattr(self.module_agent, agent_class_name)(args.agent_config)
             config.agent = self.agent_instance
@@ -272,7 +272,7 @@ class LeaderboardEvaluator(object):
                 self.sensor_icons = [sensors_to_icons[sensor['type']] for sensor in self.sensors]
                 self.statistics_manager.save_sensors(self.sensor_icons, args.checkpoint)
 
-            self._agent_watchdog.stop()
+            # self._agent_watchdog.stop()
 
         except SensorConfigurationInvalid as e:
             # The sensors are invalid -> set the ejecution to rejected and stop

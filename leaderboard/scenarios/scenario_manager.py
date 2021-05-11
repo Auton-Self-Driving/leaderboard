@@ -63,11 +63,11 @@ class ScenarioManager(object):
 
         # Used to detect if the simulation is down
         watchdog_timeout = max(5, self._timeout - 2)
-        self._watchdog = Watchdog(watchdog_timeout)
+        # self._watchdog = Watchdog(watchdog_timeout)
 
         # Avoid the agent from freezing the simulation
         agent_timeout = watchdog_timeout - 1
-        self._agent_watchdog = Watchdog(agent_timeout)
+        # self._agent_watchdog = Watchdog(agent_timeout)
 
         self.scenario_duration_system = 0.0
         self.scenario_duration_game = 0.0
@@ -122,7 +122,7 @@ class ScenarioManager(object):
         self.start_system_time = time.time()
         self.start_game_time = GameTime.get_time()
 
-        self._watchdog.start()
+        # self._watchdog.start()
         self._running = True
 
         while self._running:
@@ -143,7 +143,7 @@ class ScenarioManager(object):
         if self._timestamp_last_run < timestamp.elapsed_seconds and self._running:
             self._timestamp_last_run = timestamp.elapsed_seconds
 
-            self._watchdog.update()
+            # self._watchdog.update()
             # Update game time and actor information
             GameTime.on_carla_tick(timestamp)
             CarlaDataProvider.on_carla_tick()
@@ -191,7 +191,7 @@ class ScenarioManager(object):
         """
         This function triggers a proper termination of a scenario
         """
-        self._watchdog.stop()
+        # self._watchdog.stop()
 
         self.end_system_time = time.time()
         self.end_game_time = GameTime.get_time()
