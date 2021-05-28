@@ -19,7 +19,7 @@ import py_trees
 
 import carla
 
-from environment.carla_9_4.agents.navigation.local_planner import RoadOption
+from agents.navigation.local_planner import RoadOption
 
 # pylint: disable=line-too-long
 from srunner.scenarioconfigs.scenario_configuration import ScenarioConfiguration, ActorConfigurationData
@@ -677,7 +677,7 @@ class RouteScenario(BasicScenario):
                                       route=route,
                                       offroad_max=30,
                                       terminate_on_failure=True)
-                                      
+
         completion_criterion = RouteCompletionTest(self.ego_vehicles[0], route=route)
 
         outsidelane_criterion = OutsideRouteLanesTest(self.ego_vehicles[0], route=route)
@@ -804,7 +804,7 @@ class Trigger(BasicScenario):
                                       route=route,
                                       offroad_max=30,
                                       terminate_on_failure=True)
-                                      
+
         completion_criterion = RouteCompletionTest(self.ego_vehicles[0], route=route)
 
         outsidelane_criterion = OutsideRouteLanesTest(self.ego_vehicles[0], route=route)

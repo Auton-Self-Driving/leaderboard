@@ -13,9 +13,9 @@ It also contains functions to convert the CARLA world location do GPS coordinate
 import math
 import xml.etree.ElementTree as ET
 
-from environment.carla_9_4.agents.navigation.global_route_planner import GlobalRoutePlanner
-from environment.carla_9_4.agents.navigation.global_route_planner_dao import GlobalRoutePlannerDAO
-from environment.carla_9_4.agents.navigation.local_planner import RoadOption
+from agents.navigation.global_route_planner import GlobalRoutePlanner
+from agents.navigation.global_route_planner_dao import GlobalRoutePlannerDAO
+from agents.navigation.local_planner import RoadOption
 # from .global_route_planner import GlobalRoutePlanner
 # from leaderboard.utils.global_route_planner_dao import GlobalRoutePlannerDAO
 # from leaderboard.utils.global_route_planner import RoadOption
@@ -136,7 +136,7 @@ def interpolate_trajectory(world, waypoints_trajectory, hop_resolution=1.0):
     """
     Given some raw keypoints interpolate a full dense trajectory to be used by the user.
     returns the full interpolated route both in GPS coordinates and also in its original form.
-    
+
     Args:
         - world: an reference to the CARLA world so we can use the planner
         - waypoints_trajectory: the current coarse trajectory
