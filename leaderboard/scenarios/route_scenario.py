@@ -286,10 +286,10 @@ def build_scenario_instances(world, ego_vehicle, scenario_definitions,
         scenario_configuration.other_actors = list_of_actor_conf_instances
         scenario_configuration.trigger_points = [egoactor_trigger_position]
         scenario_configuration.subtype = definition['scenario_type']
-        # scenario_configuration.ego_vehicles = [ActorConfigurationData('vehicle.lincoln.mkz2017',
-                                                                        # ego_vehicle.get_transform(),
-                                                                        # 'hero')]
-        scenario_configuration.ego_vehicles = [ego_vehicle]
+        scenario_configuration.ego_vehicles = [ActorConfigurationData('vehicle.lincoln.mkz2017',
+                                                                        ego_vehicle.get_transform(),
+                                                                        'hero')]
+        # scenario_configuration.ego_vehicles = [ego_vehicle]
         route_var_name = "ScenarioRouteNumber{}".format(scenario_number)
         scenario_configuration.route_var_name = route_var_name
         try:
