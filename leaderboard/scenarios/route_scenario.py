@@ -56,13 +56,13 @@ NUMBER_CLASS_TRANSLATION = {
     "Scenario1": ControlLoss,
     "Scenario2": FollowLeadingVehicle,
     "Scenario3": DynamicObjectCrossing,
-    "Scenario4": VehicleTurningRoute,
+#     "Scenario4": VehicleTurningRoute,
     "Scenario5": OtherLeadingVehicle,
     "Scenario6": ManeuverOppositeDirection,
-    "Scenario7": SignalJunctionCrossingRoute,
-    "Scenario8": SignalJunctionCrossingRoute,
-    "Scenario9": SignalJunctionCrossingRoute,
-    "Scenario10": NoSignalJunctionCrossingRoute
+#     "Scenario7": SignalJunctionCrossingRoute,
+#     "Scenario8": SignalJunctionCrossingRoute,
+#     "Scenario9": SignalJunctionCrossingRoute,
+#     "Scenario10": NoSignalJunctionCrossingRoute
 }
 
 
@@ -677,7 +677,7 @@ class RouteScenario(BasicScenario):
                                       route=route,
                                       offroad_max=30,
                                       terminate_on_failure=True)
-                                      
+
         completion_criterion = RouteCompletionTest(self.ego_vehicles[0], route=route)
 
         outsidelane_criterion = OutsideRouteLanesTest(self.ego_vehicles[0], route=route)
@@ -804,7 +804,7 @@ class Trigger(BasicScenario):
                                       route=route,
                                       offroad_max=30,
                                       terminate_on_failure=True)
-                                      
+
         completion_criterion = RouteCompletionTest(self.ego_vehicles[0], route=route)
 
         outsidelane_criterion = OutsideRouteLanesTest(self.ego_vehicles[0], route=route)
