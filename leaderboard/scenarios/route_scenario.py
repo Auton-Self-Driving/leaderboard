@@ -294,7 +294,7 @@ def build_scenario_instances(world, ego_vehicle, scenario_definitions,
         scenario_configuration.route_var_name = route_var_name
         try:
             scenario_instance = scenario_class(world, [ego_vehicle], scenario_configuration,
-                                                criteria_enable=False, timeout=timeout)
+                                                criteria_enable=True, timeout=timeout)
             # Do a tick every once in a while to avoid spawning everything at the same time
             if scenario_number % scenarios_per_tick == 0:
                 if CarlaDataProvider.is_sync_mode():
@@ -537,7 +537,7 @@ class RouteScenario(BasicScenario):
             scenario_configuration.route_var_name = route_var_name
             try:
                 scenario_instance = scenario_class(world, [ego_vehicle], scenario_configuration,
-                                                   criteria_enable=False, timeout=timeout)
+                                                   criteria_enable=True, timeout=timeout)
                 # Do a tick every once in a while to avoid spawning everything at the same time
                 if scenario_number % scenarios_per_tick == 0:
                     if CarlaDataProvider.is_sync_mode():
@@ -718,7 +718,7 @@ class Trigger(BasicScenario):
     """
     category = "Trigger"
 
-    def __init__(self, world, ego_vehicle, route, scenarios, debug_mode=0, criteria_enable=False):
+    def __init__(self, world, ego_vehicle, route, scenarios, debug_mode=0, criteria_enable=True):
         """
         Setup all relevant parameters and create scenarios along route
         """
