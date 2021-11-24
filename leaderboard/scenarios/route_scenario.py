@@ -56,13 +56,13 @@ NUMBER_CLASS_TRANSLATION = {
     "Scenario1": ControlLoss,
     "Scenario2": FollowLeadingVehicle,
     "Scenario3": DynamicObjectCrossing,
-#     "Scenario4": VehicleTurningRoute,
+    "Scenario4": VehicleTurningRoute,
     "Scenario5": OtherLeadingVehicle,
     "Scenario6": ManeuverOppositeDirection,
-#     "Scenario7": SignalJunctionCrossingRoute,
-#     "Scenario8": SignalJunctionCrossingRoute,
-#     "Scenario9": SignalJunctionCrossingRoute,
-#     "Scenario10": NoSignalJunctionCrossingRoute
+    "Scenario7": SignalJunctionCrossingRoute,
+    "Scenario8": SignalJunctionCrossingRoute,
+    "Scenario9": SignalJunctionCrossingRoute,
+    "Scenario10": NoSignalJunctionCrossingRoute,
 }
 
 

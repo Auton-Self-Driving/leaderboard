@@ -10,6 +10,7 @@ This module provides an NPC agent to control the ego vehicle
 from __future__ import print_function
 
 import carla
+import math
 from agents.navigation.basic_agent import BasicAgent
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 
@@ -17,6 +18,22 @@ from leaderboard.autoagents.autonomous_agent import AutonomousAgent, Track
 
 def get_entry_point():
     return 'NpcAgent'
+
+def draw_waypoints(world, waypoints, z=0.5):
+    """
+    Draw a list of waypoints at a certain height given in z.
+
+    :param world: carla.world object
+    :param waypoints: list or iterable container with the waypoints to draw
+    :param z: height in meters
+    :return:
+    """
+    for w in waypoints:
+        t = w.transform
+        begin = t.location + carla.Location(z=z)
+        angle = math.radians(t.rotation.yaw)
+        end = begin + carla.Location(x=math.cos(angle), y=math.sin(angle))
+        world.debug.draw_arrow(begin, end, arrow_size=0.3, life_time=1000.0)
 
 class NpcAgent(AutonomousAgent):
 
@@ -87,7 +104,7 @@ class NpcAgent(AutonomousAgent):
                 plan = []
 
                 prev = None
-                for transform, _ in self._global_plan_world_coord:
+                for transform, _ in self._global_plan_world_coord[:10]:
                     wp = CarlaDataProvider.get_map().get_waypoint(transform.location)
                     if  prev:
                         route_segment = self._agent._trace_route(prev, wp)
@@ -95,12 +112,18 @@ class NpcAgent(AutonomousAgent):
 
                     prev = wp
 
+                wp_list = []
+                for wp, _ in plan:
+                    wp_list.append(wp)
+
+                draw_waypoints(CarlaDataProvider._world, wp_list)
+
                 #loc = plan[-1][0].transform.location
                 #self._agent.set_destination([loc.x, loc.y, loc.z])
                 self._agent._local_planner.set_global_plan(plan)  # pylint: disable=protected-access
                 self._route_assigned = True
 
         else:
-            control = self._agent.run_step()
+            control = self._agent.run_step(debug=True)
 
         return control

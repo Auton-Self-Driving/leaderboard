@@ -208,8 +208,10 @@ class LeaderboardEvaluator(object):
         """
         Load a new CARLA world and provide data to CarlaDataProvider
         """
-
+        
+        print('>>>>> 212')
         self.world = self.client.load_world(town)
+        print('>>>>> 214')
         settings = self.world.get_settings()
         settings.fixed_delta_seconds = 1.0 / self.frame_rate
         settings.synchronous_mode = True
@@ -279,7 +281,9 @@ class LeaderboardEvaluator(object):
                 self.sensors = self.agent_instance.sensors()
                 track = self.agent_instance.track
 
-                AgentWrapper.validate_sensor_configuration(self.sensors, track, args.track)
+                print('[282]', self.sensors, track)
+
+                # AgentWrapper.validate_sensor_configuration(self.sensors, track, args.track)
 
                 self.sensor_icons = [sensors_to_icons[sensor['type']] for sensor in self.sensors]
                 self.statistics_manager.save_sensors(self.sensor_icons, args.checkpoint)
