@@ -12,6 +12,7 @@ Provisional code to evaluate Autonomous Agents for the CARLA Autonomous Driving 
 """
 from __future__ import print_function
 
+import sys
 import time
 import traceback
 import argparse
@@ -21,10 +22,12 @@ from distutils.version import LooseVersion
 import importlib
 import os
 import pkg_resources
-import sys
 import carla
 import signal
 import random
+
+sys.path.append(os.path.abspath('../../../agents/torch/multi_agent'))
+# print(sys.path)
 
 from srunner.scenariomanager.carla_data_provider import *
 from srunner.scenariomanager.timer import GameTime
@@ -38,7 +41,8 @@ from leaderboard.utils.statistics_manager import StatisticsManager
 from leaderboard.utils.route_indexer import RouteIndexer
 
 from environment.carla_9_4.server import CarlaServer
-from environment.carla_9_4.config import DEFAULT_ENV
+# from environment.carla_9_4.config import DEFAULT_ENV
+from config import ENV_CONFIG
 
 
 sensors_to_icons = {
@@ -81,7 +85,8 @@ class LeaderboardEvaluator(object):
         # First of all, we need to create the client that will send the requests
         # to the simulator. Here we'll assume the simulator is accepting
         # requests in the localhost at port 2000.
-        self.server = CarlaServer(DEFAULT_ENV)
+        # self.server = CarlaServer(DEFAULT_ENV)
+        self.server = CarlaServer(ENV_CONFIG)
         time.sleep(5)
         # self.client = carla.Client(args.host, int(args.port))
         self.client = carla.Client(args.host, self.server.server_port)
@@ -211,7 +216,7 @@ class LeaderboardEvaluator(object):
         """
         Load a new CARLA world and provide data to CarlaDataProvider
         """
-        
+
         print('>>>>> 212')
         self.world = self.client.load_world(town)
         print('>>>>> 214')
